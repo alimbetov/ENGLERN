@@ -1,29 +1,13 @@
-name: Isolated dependency candidate
+name: Dependency hardening
 on:
   push:
     branches: [qualification/dependency-r1.1]
+  workflow_dispatch:
 permissions:
   contents: read
+  actions: read
 jobs:
-  resolve:
-    runs-on: windows-2025
-    timeout-minutes: 20
-    steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v6
-        with:
-          version: '0.13.10'
-          enable-cache: false
-      - run: uv python install 3.12.16
-      - run: uv lock
-      - run: uv lock --check
-      - uses: actions/upload-artifact@v4
-        with:
-          name: candidate-uv-lock
-          path: uv.lock
-          if-no-files-found: error
   native:
-    needs: resolve
     strategy:
       fail-fast: false
       matrix:
@@ -31,19 +15,50 @@ jobs:
     runs-on: ${{ matrix.os }}
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v6
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e
         with:
           version: '0.13.10'
           enable-cache: false
       - run: uv python install 3.12.16
-      - run: uv run --no-project --python 3.12.16 python -c "import platform,sys; assert sys.version_info[:3]==(3,12,16); assert (sys.platform,platform.machine().lower()) in [('win32','amd64'),('darwin','arm64')]; print(sys.version,platform.platform())"
-      - uses: actions/download-artifact@v4
+      - run: uv run --no-project --python 3.12.16 python -c "import sys,platform,os; assert sys.version_info[:3]==(3,12,16); assert (sys.platform,platform.machine().lower()) == (('win32','amd64') if os.environ['RUNNER_OS']=='Windows' else ('darwin','arm64'))"
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
         with:
           name: candidate-uv-lock
+          run-id: 45949495356
+          github-token: ${{ github.token }}
+      - run: uv run --no-project --python 3.12.16 python -c "import hashlib; assert hashlib.sha256(open('uv.lock','rb').read()).hexdigest()=='c68e7e8cb941f0f21892f27f2b7ab03e619b0f19763cbe8478eb4195643e3c98'"
       - run: uv lock --check
       - run: uv sync --locked --group dev --group test --group build --no-build
       - run: uv pip check
-      - run: uv run --locked --no-sync python -c "from importlib.metadata import version; import numpy as np,onnxruntime as ort; from PySide6 import QtCore,QtMultimedia; from piper import PiperVoice; import PyInstaller,sqlite3; assert all(version(x)=='6.11.1' for x in ('PySide6','PySide6-Essentials','PySide6-Addons','shiboken6')); assert 'CPUExecutionProvider' in ort.get_available_providers(); assert np.sum(np.array([1,2]))==3; print(QtCore.qVersion(),ort.__version__,np.__version__)"
-      - run: uv pip freeze
-      - run: uv run --locked --no-sync python -c "import hashlib; print('lock SHA256:',hashlib.sha256(open('uv.lock','rb').read()).hexdigest())"
+      - run: uv run --locked --no-sync python scripts/qualification/native_probe.py
+      - name: Known vulnerability scan
+        run: uvx --python 3.12.16 --from pip-audit==2.10.1 pip-audit --strict --no-deps --disable-pip -r evidence/installed.txt -f json -o evidence/vulnerabilities.json
+      - name: CycloneDX inventory
+        if: always()
+        run: uvx --python 3.12.16 --from cyclonedx-bom==8.0.1 cyclonedx-py requirements evidence/installed.txt --output-format JSON --output-file evidence/sbom.json
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: evidence-${{ runner.os }}
+          path: evidence/
+          if-no-files-found: error
+  admission:
+    needs: native
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - name: Require both native jobs
+        env:
+          NATIVE_RESULT: ${{ needs.native.result }}
+        run: test "$NATIVE_RESULT" = success
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          pattern: evidence-*
+          path: reports
+      - run: python3 scripts/qualification/admission.py

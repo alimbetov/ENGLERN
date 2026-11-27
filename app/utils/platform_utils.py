@@ -4,6 +4,8 @@ import sys
 
 
 def app_root() -> Path:
+    if len(sys.argv) == 3 and sys.argv[1] in ('--standard-smoke-test', '--voice-smoke-test') and os.environ.get('ENGLERN_SMOKE_ROOT'):
+        return Path(os.environ['ENGLERN_SMOKE_ROOT'])
     if getattr(sys, "frozen", False):
         if sys.platform == "darwin":
             return Path.home() / "Library" / "Application Support" / "ENGLERN"

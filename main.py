@@ -1,4 +1,5 @@
 import sys
+import os
 from pathlib import Path
 from PySide6.QtCore import QTimer
 from PySide6.QtWidgets import QApplication
@@ -6,7 +7,7 @@ from app.ui.main_window import MainWindow
 
 
 def main() -> None:
-    smoke = len(sys.argv) == 3 and sys.argv[1] in ('--smoke-test', '--voice-smoke-test')
+    smoke = len(sys.argv) == 3 and sys.argv[1] in ('--smoke-test', '--standard-smoke-test', '--voice-smoke-test')
     app = QApplication([sys.argv[0]] if smoke else sys.argv)
     app.setApplicationName('ENGLERN')
     window = MainWindow()
@@ -14,6 +15,14 @@ def main() -> None:
     if smoke:
         def complete():
             assert window.centralWidget().count() == 3
+            if sys.argv[1] in ('--standard-smoke-test', '--voice-smoke-test'):
+                assert os.environ.get("ENGLERN_SMOKE_ROOT"), "Isolated smoke profile required"
+                from app.config.voices import get_voice_model_path
+                model = get_voice_model_path("English US - Lessac High")
+                if sys.argv[1] == '--standard-smoke-test':
+                    root = Path(getattr(sys, "_MEIPASS", Path(__file__).parent))
+                    assert not list((root / "bundled_voices").glob("*.onnx*"))
+                    assert not model.exists()
             if sys.argv[1] == '--voice-smoke-test':
                 import tempfile
                 import wave

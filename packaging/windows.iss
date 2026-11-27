@@ -1,4 +1,9 @@
-#define AppVersion "0.1.0-alpha.1"
+#ifndef AppVersion
+#define AppVersion "0.1.0-alpha.2"
+#endif
+#ifndef OutputName
+#define OutputName "ENGLERN-0.1.0-alpha.2-windows-x64-standard-setup"
+#endif
 [Setup]
 AppId=ENGLERN.Desktop
 AppName=ENGLERN
@@ -9,7 +14,7 @@ PrivilegesRequired=lowest
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
 OutputDir=..\release
-OutputBaseFilename=ENGLERN-0.1.0-alpha.1-win-x64-setup
+OutputBaseFilename={#OutputName}
 Compression=lzma2
 SolidCompression=yes
 WizardStyle=modern

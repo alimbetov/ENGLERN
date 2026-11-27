@@ -1,5 +1,15 @@
 name: Internal Alpha packaging
 on:
+  push:
+    branches: [base_dev]
+    paths:
+      - '.github/workflows/alpha-packaging.yml'
+      - 'app/**'
+      - 'main.py'
+      - 'scripts/package_*'
+      - 'packaging/**'
+      - 'uv.lock'
+      - 'pyproject.toml'
   workflow_dispatch:
 permissions:
   contents: read

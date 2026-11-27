@@ -1,0 +1,22 @@
+[project]
+name = "academic-audio-studio"
+version = "0.1.0"
+description = "Offline multilingual TTS studio using PySide6 and Piper"
+requires-python = ">=3.12.16,<3.13"
+dependencies = ["PySide6==6.11.1", "piper-tts==1.4.2", "onnxruntime>=1,<2", "numpy>=1.26,<3"]
+
+[dependency-groups]
+dev = ["ruff>=0.11,<1"]
+test = ["pytest>=8,<10", "pytest-qt>=4.4,<5", "pytest-cov>=6,<8"]
+build = ["pyinstaller==6.21.0"]
+
+[tool.uv]
+package = false
+required-version = "==0.13.10"
+default-groups = []
+environments = ["sys_platform == 'win32' and platform_machine == 'AMD64'", "sys_platform == 'darwin' and platform_machine == 'arm64'"]
+required-environments = ["sys_platform == 'win32' and platform_machine == 'AMD64'", "sys_platform == 'darwin' and platform_machine == 'arm64'"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+qt_api = "pyside6"

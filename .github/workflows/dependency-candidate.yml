@@ -1,0 +1,49 @@
+name: Isolated dependency candidate
+on:
+  push:
+    branches: [qualification/dependency-r1.1]
+permissions:
+  contents: read
+jobs:
+  resolve:
+    runs-on: windows-2025
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: '0.13.10'
+          enable-cache: false
+      - run: uv python install 3.12.16
+      - run: uv lock
+      - run: uv lock --check
+      - uses: actions/upload-artifact@v4
+        with:
+          name: candidate-uv-lock
+          path: uv.lock
+          if-no-files-found: error
+  native:
+    needs: resolve
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-2025, macos-15]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: '0.13.10'
+          enable-cache: false
+      - run: uv python install 3.12.16
+      - run: uv run --no-project --python 3.12.16 python -c "import platform,sys; assert sys.version_info[:3]==(3,12,16); assert (sys.platform,platform.machine().lower()) in [('win32','amd64'),('darwin','arm64')]; print(sys.version,platform.platform())"
+      - uses: actions/download-artifact@v4
+        with:
+          name: candidate-uv-lock
+      - run: uv lock --check
+      - run: uv sync --locked --group dev --group test --group build --no-build
+      - run: uv pip check
+      - run: uv run --locked --no-sync python -c "from importlib.metadata import version; import numpy as np,onnxruntime as ort; from PySide6 import QtCore,QtMultimedia; from piper import PiperVoice; import PyInstaller,sqlite3; assert all(version(x)=='6.11.1' for x in ('PySide6','PySide6-Essentials','PySide6-Addons','shiboken6')); assert 'CPUExecutionProvider' in ort.get_available_providers(); assert np.sum(np.array([1,2]))==3; print(QtCore.qVersion(),ort.__version__,np.__version__)"
+      - run: uv pip freeze
+      - run: uv run --locked --no-sync python -c "import hashlib; print('lock SHA256:',hashlib.sha256(open('uv.lock','rb').read()).hexdigest())"

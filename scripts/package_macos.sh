@@ -16,7 +16,7 @@ if [[ -n "${ENGLERN_VOICE_DIR:-}" ]]; then
     done
     mode=--voice-smoke-test
 fi
-uv run --locked --no-sync python -m PyInstaller "${voice_args[@]}" --noconfirm --clean --windowed --onedir --name ENGLERN --osx-bundle-identifier com.englern.desktop --collect-all piper --collect-all onnxruntime main.py
+uv run --locked --no-sync python -m PyInstaller ${voice_args[@]+"${voice_args[@]}"} --noconfirm --clean --windowed --onedir --name ENGLERN --osx-bundle-identifier com.englern.desktop --collect-all piper --collect-all onnxruntime main.py
 stage=$(mktemp -d)
 trap 'rm -rf "$stage"' EXIT
 smoke() {

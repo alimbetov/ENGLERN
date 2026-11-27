@@ -24,11 +24,6 @@ jobs:
           enable-cache: false
       - run: uv python install 3.12.16
       - run: uv run --no-project --python 3.12.16 python -c "import sys,platform,os; assert sys.version_info[:3]==(3,12,16); assert (sys.platform,platform.machine().lower()) == (('win32','amd64') if os.environ['RUNNER_OS']=='Windows' else ('darwin','arm64'))"
-      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
-        with:
-          name: candidate-uv-lock
-          run-id: 45949495356
-          github-token: ${{ github.token }}
       - run: uv run --no-project --python 3.12.16 python -c "import hashlib; assert hashlib.sha256(open('uv.lock','rb').read()).hexdigest()=='c68e7e8cb941f0f21892f27f2b7ab03e619b0f19763cbe8478eb4195643e3c98'"
       - run: uv lock --check
       - run: uv sync --locked --group dev --group test --group build --no-build

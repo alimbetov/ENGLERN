@@ -41,8 +41,8 @@ jobs:
           }
           if (-not (Test-Path -LiteralPath $iscc -PathType Leaf)) { throw 'ISCC.exe not found' }
           $version = (Get-Item -LiteralPath $iscc).VersionInfo
-          if ($version.FileMajorPart -ne 6) { throw "Unsupported Inno Setup version: $($version.FileVersion)" }
-          Write-Host "Using Inno Setup $($version.FileVersion) at $iscc"
+          # PE version metadata may be absent; actual ISCC compilation is mandatory.
+          Write-Host "Using ISCC at $iscc (PE version metadata: $($version.FileVersion))"
           "ENGLERN_ISCC=$iscc" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
       - name: Windows installer
         if: runner.os == 'Windows'

@@ -1,0 +1,11 @@
+.venv/
+__pycache__/
+*.py[cod]
+build/
+dist/
+*.spec
+voices/
+audio/
+.DS_Store
+
+release/

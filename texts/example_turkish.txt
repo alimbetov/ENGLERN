@@ -1,0 +1,1 @@
+Bu kısa bir Türkçe testtir. Uygulama yazılı metni yerel bir ses dosyasına dönüştürür.

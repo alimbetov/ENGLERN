@@ -1,0 +1,21 @@
+name: Candidate dependency lock (manual)
+on: workflow_dispatch
+permissions:
+  contents: read
+jobs:
+  resolve:
+    runs-on: windows-2025
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: '0.13.10'
+          enable-cache: false
+      - run: uv python install 3.12.16
+      - run: uv lock
+      - run: uv lock --check
+      - uses: actions/upload-artifact@v4
+        with:
+          name: candidate-uv-lock
+          path: uv.lock

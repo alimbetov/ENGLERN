@@ -1,0 +1,35 @@
+name: Internal Alpha packaging
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-2025, macos-15]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e
+        with:
+          version: '0.13.10'
+          enable-cache: false
+      - name: Install Inno Setup
+        if: runner.os == 'Windows'
+        run: choco install innosetup --version=6.4.3 -y --no-progress
+      - name: Windows installer
+        if: runner.os == 'Windows'
+        run: ./scripts/package_windows.ps1
+      - name: macOS installer
+        if: runner.os == 'macOS'
+        run: bash scripts/package_macos.sh
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: ENGLERN-alpha-${{ runner.os }}
+          path: release/*
+          if-no-files-found: error

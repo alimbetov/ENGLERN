@@ -1,0 +1,39 @@
+name: Dependency qualification
+on:
+  push:
+    branches: [base_dev, main]
+  pull_request:
+    branches: [base_dev, main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  native:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-2025, macos-15]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    env:
+      QT_QPA_PLATFORM: offscreen
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: '0.13.10'
+          enable-cache: false
+      - run: uv python install 3.12.16
+      - run: uv lock --check
+      - run: uv sync --locked --group dev --group test --group build --no-build
+      - run: uv pip check
+      - run: uv run --locked --no-sync pytest -q tests --junitxml=dependency-results.xml
+      - run: uv run --locked --no-sync python -m compileall -q app main.py
+      - run: uv run --locked --no-sync ruff check tests
+      - run: uv pip freeze
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: dependency-results-${{ matrix.os }}
+          path: dependency-results.xml
+          if-no-files-found: warn

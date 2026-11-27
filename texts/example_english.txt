@@ -1,0 +1,1 @@
+This is a short academic English test. The application converts written text into a local offline audio file.

@@ -2,7 +2,7 @@ param([string]$Iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe", [string]
 $ErrorActionPreference = 'Stop'
 if ($Edition -eq 'offline' -and -not $VoiceDir) { throw 'Offline requires verified voice directory' }
 if ($Edition -eq 'standard' -and $VoiceDir) { throw 'Standard must not bundle voices' }
-$Version = '0.1.0-alpha.2'
+$Version = '0.1.0-alpha.3'
 $BaseName = "ENGLERN-$Version-windows-x64-$Edition-setup"
 Set-Location "$PSScriptRoot\.."
 if (-not (Test-Path $Iscc)) { throw 'Install Inno Setup 6 or specify -Iscc.' }

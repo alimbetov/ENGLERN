@@ -2,7 +2,7 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 edition="${ENGLERN_EDITION:-standard}"
-version=0.1.0-alpha.2
+version=0.1.0-alpha.3
 case "$edition" in
     standard) [[ -z "${ENGLERN_VOICE_DIR:-}" ]] || { echo "Standard must not bundle voices" >&2; exit 1; } ;;
     offline) [[ -n "${ENGLERN_VOICE_DIR:-}" ]] || { echo "Offline requires verified voice directory" >&2; exit 1; } ;;
@@ -23,7 +23,7 @@ if [[ -n "${ENGLERN_VOICE_DIR:-}" ]]; then
     done
     mode=--voice-smoke-test
 fi
-uv run --locked --no-sync python -m PyInstaller ${voice_args[@]+"${voice_args[@]}"} --noconfirm --clean --windowed --onedir --name ENGLERN --osx-bundle-identifier com.englern.desktop --collect-all piper --collect-all onnxruntime main.py
+uv run --locked --no-sync python -m PyInstaller ${voice_args[@]+"${voice_args[@]}"} --noconfirm --clean --windowed --onedir --name ENGLERN --target-arch arm64 --osx-bundle-identifier com.englern.desktop --collect-all piper --collect-all onnxruntime main.py
 stage=$(mktemp -d)
 trap 'rm -rf "$stage"' EXIT
 smoke() {
@@ -51,6 +51,30 @@ hdiutil attach -readonly -nobrowse -mountpoint "$stage/mount" "$image"
 trap 'hdiutil detach "$stage/mount" || true; rm -rf "$stage"' EXIT
 ditto "$stage/mount/ENGLERN.app" "$stage/installed.app"
 smoke "$stage/installed.app/Contents/MacOS/ENGLERN"
+# Check the installed bundle, not merely the build directory.
+codesign --verify --deep --strict --verbose=2 "$stage/installed.app"
+file "$stage/installed.app/Contents/MacOS/ENGLERN"
+lipo -verify_arch arm64 "$stage/installed.app/Contents/MacOS/ENGLERN"
+# Ordinary Cocoa startup with a clean isolated profile and unrelated working directory.
+mkdir "$stage/native-profile"
+(
+    cd /
+    unset QT_QPA_PLATFORM
+    ENGLERN_NATIVE_LAUNCH_PROBE=1 ENGLERN_SMOKE_ROOT="$stage/native-profile" "$stage/installed.app/Contents/MacOS/ENGLERN" &
+    pid=$!
+    trap 'kill "$pid" 2>/dev/null || true; wait "$pid" 2>/dev/null || true' EXIT
+    for ((i=0;i<60;i++)); do
+        kill -0 "$pid" 2>/dev/null || break
+        if [[ -f "$stage/native-profile/native-launch-ready" ]]; then
+            grep -Fxq PASS "$stage/native-profile/native-launch-ready"
+            exit 0
+        fi
+        sleep 1
+    done
+    cat "$stage/native-profile/logs/"*.log 2>/dev/null || true
+    echo "Native Cocoa launch failed" >&2
+    exit 1
+)
 hdiutil detach "$stage/mount"
 trap 'rm -rf "$stage"' EXIT
 shasum -a 256 "$image" > "$image.sha256"

@@ -1,8 +1,8 @@
 #ifndef AppVersion
-#define AppVersion "0.1.0-alpha.2"
+#define AppVersion "0.1.0-alpha.3"
 #endif
 #ifndef OutputName
-#define OutputName "ENGLERN-0.1.0-alpha.2-windows-x64-standard-setup"
+#define OutputName "ENGLERN-0.1.0-alpha.3-windows-x64-standard-setup"
 #endif
 [Setup]
 AppId=ENGLERN.Desktop

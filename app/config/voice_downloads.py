@@ -17,6 +17,15 @@ class VoiceDownloadPreset:
 
 VOICE_DOWNLOAD_PRESETS: tuple[VoiceDownloadPreset, ...] = (
     VoiceDownloadPreset(
+        label="English US - LJ Speech High",
+        language_code="en_US",
+        voice_name="en_US-ljspeech-high",
+        files=(
+            VoiceDownloadFile(filename="en_US-ljspeech-high.onnx", url="https://huggingface.co/rhasspy/piper-voices/resolve/217ddc79818708b078d0d14a8fae9608b9d77141/en/en_US/ljspeech/high/en_US-ljspeech-high.onnx"),
+            VoiceDownloadFile(filename="en_US-ljspeech-high.onnx.json", url="https://huggingface.co/rhasspy/piper-voices/resolve/217ddc79818708b078d0d14a8fae9608b9d77141/en/en_US/ljspeech/high/en_US-ljspeech-high.onnx.json"),
+        ),
+    ),
+    VoiceDownloadPreset(
         label="English US - Lessac High",
         language_code="en_US",
         voice_name="en_US-lessac-high",

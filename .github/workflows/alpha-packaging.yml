@@ -21,24 +21,26 @@ jobs:
       matrix:
         os: [windows-2025, macos-15]
         edition: [standard, offline]
-    # Public CI may not redistribute the supplied Lessac model until license clearance.
+    # Offline qualification uses author-declared public-domain LJ Speech, never Lessac.
     runs-on: ${{ matrix.os }}
     timeout-minutes: 45
     steps:
-      - name: Offline distribution admission
-        if: matrix.edition == 'offline'
-        run: echo 'Offline edition HOLD - model redistribution not approved; no installer will be built or uploaded.'
-      - if: matrix.edition == 'standard'
-        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           persist-credentials: false
-      - if: matrix.edition == 'standard'
-        uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e
+      - uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e
         with:
           version: '0.13.10'
           enable-cache: false
+      - name: Fetch pinned LJ Speech qualification fixture
+        if: matrix.edition == 'offline'
+        shell: bash
+        run: |
+          uv python install 3.12.16
+          uv run --no-project --python 3.12.16 python scripts/verify_bundled_voice.py --download "$RUNNER_TEMP/englern-voice"
+          echo "ENGLERN_VOICE_DIR=$RUNNER_TEMP/englern-voice" >> "$GITHUB_ENV"
       - name: Install Inno Setup
-        if: matrix.edition == 'standard' && runner.os == 'Windows'
+        if: runner.os == 'Windows'
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
@@ -53,10 +55,12 @@ jobs:
           Write-Host "Using ISCC at $iscc (PE version metadata: $($version.FileVersion))"
           "ENGLERN_ISCC=$iscc" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
       - name: Windows installer
-        if: matrix.edition == 'standard' && runner.os == 'Windows'
-        run: ./scripts/package_windows.ps1 -Iscc $env:ENGLERN_ISCC -Edition standard
+        if: runner.os == 'Windows'
+        run: ./scripts/package_windows.ps1 -Iscc $env:ENGLERN_ISCC -Edition ${{ matrix.edition }}
       - name: macOS installer
-        if: matrix.edition == 'standard' && runner.os == 'macOS'
+        if: runner.os == 'macOS'
+        env:
+          ENGLERN_EDITION: ${{ matrix.edition }}
         run: bash scripts/package_macos.sh
       - if: matrix.edition == 'standard'
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
@@ -64,6 +68,10 @@ jobs:
           name: ENGLERN-alpha-${{ runner.os }}-${{ matrix.edition }}
           path: release/*
           if-no-files-found: error
-      - name: Enforce Offline HOLD
+      - name: Record Offline integrity evidence only
         if: matrix.edition == 'offline'
-        run: exit 1
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: ENGLERN-offline-evidence-${{ runner.os }}
+          path: ${{ runner.temp }}/englern-voice/VOICE-EVIDENCE.json
+          if-no-files-found: error

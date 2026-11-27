@@ -16,7 +16,7 @@ $voiceArgs = @()
 if ($VoiceDir) {
     $VoiceDir = (Resolve-Path $VoiceDir).Path
     uv run --locked --no-sync python scripts/verify_bundled_voice.py $VoiceDir; Check
-    foreach ($name in @('en_US-lessac-high.onnx','en_US-lessac-high.onnx.json')) {
+    foreach ($name in @('en_US-ljspeech-high.onnx','en_US-ljspeech-high.onnx.json','MODEL_CARD','VOICE-EVIDENCE.json','VOICE-NOTICE.txt')) {
         $voiceArgs += @('--add-data', ((Join-Path $VoiceDir $name) + ':bundled_voices'))
     }
 }

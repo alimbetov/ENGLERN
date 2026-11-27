@@ -5,6 +5,11 @@ from app.utils.platform_utils import voices_dir
 
 
 VOICE_PRESETS = {
+    "English US - LJ Speech High": {
+        "language_code": "en_US",
+        "default_voice": "en_US-ljspeech-high",
+        "model_file": "en_US-ljspeech-high.onnx",
+    },
     "English US - Lessac High": {
         "language_code": "en_US",
         "default_voice": "en_US-lessac-high",

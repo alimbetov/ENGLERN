@@ -18,7 +18,7 @@ voice_args=()
 mode=--standard-smoke-test
 if [[ -n "${ENGLERN_VOICE_DIR:-}" ]]; then
     uv run --locked --no-sync python scripts/verify_bundled_voice.py "$ENGLERN_VOICE_DIR"
-    for name in en_US-lessac-high.onnx en_US-lessac-high.onnx.json; do
+    for name in en_US-ljspeech-high.onnx en_US-ljspeech-high.onnx.json MODEL_CARD VOICE-EVIDENCE.json VOICE-NOTICE.txt; do
         voice_args+=(--add-data "$ENGLERN_VOICE_DIR/$name:bundled_voices")
     done
     mode=--voice-smoke-test

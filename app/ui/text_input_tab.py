@@ -80,6 +80,11 @@ class TextInputTab(QWidget):
         text = self.text_input.toPlainText()
         language = self.language_combo.currentText()
         voice_model = get_voice_model_path(language)
+        if not voice_model.is_file() or not Path(str(voice_model) + ".json").is_file():
+            self.status_label.setText("Status: voice not installed")
+            QMessageBox.information(self, "Voice required",
+                "Install the selected voice in Voice Downloader, or copy its ONNX and ONNX.JSON files into the voices folder.")
+            return
         output_file = create_manual_output_file(language)
 
         self.generate_button.setEnabled(False)

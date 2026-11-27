@@ -1,4 +1,5 @@
 from pathlib import Path
+import sys
 
 from app.utils.platform_utils import voices_dir
 
@@ -35,7 +36,13 @@ VOICE_PRESETS = {
 def get_voice_model_path(language: str) -> Path:
     if language not in VOICE_PRESETS:
         raise KeyError(f"Unknown language: {language}")
-    return voices_dir() / VOICE_PRESETS[language]["model_file"]
+    name = VOICE_PRESETS[language]["model_file"]
+    local = voices_dir() / name
+    bundled = Path(getattr(sys, "_MEIPASS", Path(__file__).resolve().parents[2])) / "bundled_voices" / name
+    for candidate in (local, bundled):
+        if candidate.is_file() and Path(str(candidate) + ".json").is_file():
+            return candidate
+    return local
 
 
 def get_default_voice_name(language: str) -> str:

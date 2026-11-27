@@ -7,14 +7,23 @@ uv python install 3.12.16
 uv lock --check
 uv sync --locked --group build --no-build
 uv run --locked --no-sync python -c 'import sys,platform; assert sys.version_info[:3]==(3,12,16) and platform.machine()=="arm64"'
-uv run --locked --no-sync python -m PyInstaller --noconfirm --clean --windowed --onedir --name ENGLERN --osx-bundle-identifier com.englern.desktop --collect-all piper --collect-all onnxruntime main.py
+voice_args=()
+mode=--smoke-test
+if [[ -n "${ENGLERN_VOICE_DIR:-}" ]]; then
+    uv run --locked --no-sync python scripts/verify_bundled_voice.py "$ENGLERN_VOICE_DIR"
+    for name in en_US-lessac-high.onnx en_US-lessac-high.onnx.json; do
+        voice_args+=(--add-data "$ENGLERN_VOICE_DIR/$name:bundled_voices")
+    done
+    mode=--voice-smoke-test
+fi
+uv run --locked --no-sync python -m PyInstaller "${voice_args[@]}" --noconfirm --clean --windowed --onedir --name ENGLERN --osx-bundle-identifier com.englern.desktop --collect-all piper --collect-all onnxruntime main.py
 stage=$(mktemp -d)
 trap 'rm -rf "$stage"' EXIT
 smoke() {
     local marker="$stage/smoke.txt" pid
     rm -f "$marker"
-    QT_QPA_PLATFORM=offscreen "$1" --smoke-test "$marker" & pid=$!
-    for ((i=0;i<60;i++)); do
+    QT_QPA_PLATFORM=offscreen "$1" "$mode" "$marker" & pid=$!
+    for ((i=0;i<180;i++)); do
         if ! kill -0 "$pid" 2>/dev/null; then wait "$pid"; grep -Fxq 'ENGLERN GUI smoke PASS' "$marker"; return; fi
         sleep 1
     done

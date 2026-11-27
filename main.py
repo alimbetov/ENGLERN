@@ -6,7 +6,7 @@ from app.ui.main_window import MainWindow
 
 
 def main() -> None:
-    smoke = len(sys.argv) == 3 and sys.argv[1] == '--smoke-test'
+    smoke = len(sys.argv) == 3 and sys.argv[1] in ('--smoke-test', '--voice-smoke-test')
     app = QApplication([sys.argv[0]] if smoke else sys.argv)
     app.setApplicationName('ENGLERN')
     window = MainWindow()
@@ -14,6 +14,20 @@ def main() -> None:
     if smoke:
         def complete():
             assert window.centralWidget().count() == 3
+            if sys.argv[1] == '--voice-smoke-test':
+                import tempfile
+                import wave
+                from app.config.voices import get_voice_model_path
+                from app.services.piper_tts_service import PiperTTSService
+                model = get_voice_model_path("English US - Lessac High")
+                assert model.parent.name == "bundled_voices", "Bundled voice not selected"
+                with tempfile.TemporaryDirectory() as directory:
+                    output = Path(directory) / "probe.wav"
+                    PiperTTSService().generate_wav("Welcome to ENGLERN.", model, output)
+                    with wave.open(str(output), "rb") as wav:
+                        assert wav.getframerate() == 22050
+                        assert wav.getnchannels() == 1 and wav.getsampwidth() == 2
+                        assert wav.getnframes() > 0 and any(wav.readframes(wav.getnframes()))
             Path(sys.argv[2]).write_text('ENGLERN GUI smoke PASS\n', encoding='utf-8')
             app.quit()
         QTimer.singleShot(1200, complete)

@@ -1,0 +1,2 @@
+# ENGLERN website
+Static RU/EN download landing page. Enable Settings > Pages > Build and deployment > Source > GitHub Actions, then rerun ENGLERN website workflow. Target URL https://alimbetov.github.io/ENGLERN/. Current links are clearly marked temporary internal Actions downloads; replace with verified versioned Releases manifest in DIST-R1.2. Offline buttons disabled pending actual asset publication. No analytics, external scripts or backend. Concept illustration is not a screenshot.
